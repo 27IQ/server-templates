@@ -1,0 +1,39 @@
+services:
+  minecraft:
+    build: 
+      context: .
+      args:
+        RCON_PORT: ${RCON_PORT}
+        RCON_PWD: ${RCON_PWD}
+        MOTD: ${MOTD}
+        JAVA_ARGS: ${JAVA_ARGS}
+    container_name: ${PACK_NAME}
+    restart: unless-stopped
+
+    ports:
+      - "${SERVER_PORT}:25565"
+
+    expose:
+      - "${RCON_PORT}"
+
+    volumes:
+      - mc_server_world:/opt/mcserver/world
+      - mc_server_config:/opt/mcserver/config
+      - mc_server_logs:/opt/mcserver/logs
+      - mc_server_backups:/opt/mcserver/backups
+      - mc_server_journeymap:/opt/mcserver/journeymap
+      - mc_server_asm:/opt/mcserver/asm
+
+volumes:
+  mc_server_world:
+    name: ${PACK_NAME}_world
+  mc_server_config:
+    name: ${PACK_NAME}_config
+  mc_server_logs:
+    name: ${PACK_NAME}_logs
+  mc_server_backups:
+    name: ${PACK_NAME}_backups
+  mc_server_journeymap:
+    name: ${PACK_NAME}_journeymap
+  mc_server_asm:
+    name: ${PACK_NAME}_asm
