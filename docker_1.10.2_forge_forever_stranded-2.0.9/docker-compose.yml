@@ -9,13 +9,10 @@ services:
         JAVA_ARGS: ${JAVA_ARGS}
     container_name: ${PACK_NAME}
     restart: unless-stopped
-
     ports:
       - "${SERVER_PORT}:25565"
-
     expose:
       - "${RCON_PORT}"
-
     volumes:
       - mc_server_world:/opt/mcserver/world
       - mc_server_config:/opt/mcserver/config
@@ -23,6 +20,8 @@ services:
       - mc_server_backups:/opt/mcserver/backups
       - mc_server_journeymap:/opt/mcserver/journeymap
       - mc_server_asm:/opt/mcserver/asm
+      - mc_server_enderio:/opt/mcserver/enderio
+      - mc_server_woot:/opt/mcserver/woot
 
 volumes:
   mc_server_world:
@@ -37,3 +36,7 @@ volumes:
     name: ${PACK_NAME}_journeymap
   mc_server_asm:
     name: ${PACK_NAME}_asm
+  mc_server_enderio:
+    name: ${PACK_NAME}_enderio
+  mc_server_woot:
+    name: ${PACK_NAME}_woot
