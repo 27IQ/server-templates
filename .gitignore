@@ -3,13 +3,17 @@
 **/mcron.sh
 **/backup.sh
 **/scheduled-maintenance.sh
+**/server/
+**/backups/
 **/resources/auto-restart-container-hook.sh
 **/resources/mcron-container-hook.sh
+**/resources/start-mcserver.sh
 !/scripts/
 !/scripts/auto-restart.sh
 !/scripts/mcron.sh
 !/scripts/backup.sh
 !/scripts/scheduled-maintenance.sh
+!/scripts/start-mcserver.sh
 !/scripts/auto-restart-container-hook.sh
 !/scripts/mcron-container-hook.sh
 !/install-template-hooks.sh

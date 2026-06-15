@@ -12,9 +12,9 @@ RUN apt-get update && apt-get install -y curl unzip bash && rm -rf /var/lib/apt/
 WORKDIR /opt
 
 RUN curl -L -o server_pack.zip https://www.curseforge.com/api/v1/mods/253026/files/5222157/download
-RUN unzip server_pack.zip -d mcserver && rm server_pack.zip
+RUN unzip server_pack.zip -d mcserver-template && rm server_pack.zip
 
-WORKDIR /opt/mcserver
+WORKDIR /opt/mcserver-template
 
 # mcron
 RUN apt-get update && \
@@ -84,8 +84,10 @@ JAVA="java"
 EOF
 
 # Run ../install-template-hooks.sh for this template before building.
-COPY ./resources/auto-restart-container-hook.sh /opt/mcserver/auto-restart-container-hook.sh
-COPY ./resources/mcron-container-hook.sh /opt/mcserver/mcron-container-hook.sh
+COPY ./resources/start-mcserver.sh /usr/local/bin/start-mcserver.sh
+COPY ./resources/auto-restart-container-hook.sh /opt/mcserver-template/auto-restart-container-hook.sh
+COPY ./resources/mcron-container-hook.sh /opt/mcserver-template/mcron-container-hook.sh
 
 RUN chmod +x start.sh
-CMD ["./start.sh"]
+RUN mkdir -p /opt/mcserver && chmod +x /usr/local/bin/start-mcserver.sh
+CMD ["/usr/local/bin/start-mcserver.sh"]

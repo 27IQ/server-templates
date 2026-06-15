@@ -30,9 +30,7 @@ trap cleanup EXIT
 
 docker exec "$PACK_NAME" sh -c '
   cd /opt/mcserver
-  for path in world config backups journeymap asm enderio woot; do
-    [ -e "$path" ] && printf "%s\n" "$path"
-  done | tar -czf - -T -
+  tar --exclude="*.jar" -czf - .
 ' > "$backup_file"
 
 echo "Created backup: $backup_file"
