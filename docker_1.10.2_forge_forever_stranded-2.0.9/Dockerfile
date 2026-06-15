@@ -83,6 +83,7 @@ JAVA_ARGS="${JAVA_ARGS}"
 JAVA="java"
 EOF
 
+# Run ../install-template-hooks.sh for this template before building.
 COPY ./resources/auto-restart-container-hook.sh /opt/mcserver/auto-restart-container-hook.sh
 COPY ./resources/mcron-container-hook.sh /opt/mcserver/mcron-container-hook.sh
 

@@ -1,1 +1,16 @@
-.env
+**/.env
+**/auto-restart.sh
+**/mcron.sh
+**/backup.sh
+**/scheduled-maintenance.sh
+**/resources/auto-restart-container-hook.sh
+**/resources/mcron-container-hook.sh
+!/scripts/
+!/scripts/auto-restart.sh
+!/scripts/mcron.sh
+!/scripts/backup.sh
+!/scripts/scheduled-maintenance.sh
+!/scripts/auto-restart-container-hook.sh
+!/scripts/mcron-container-hook.sh
+!/install-template-hooks.sh
+!/install-systemd-schedule.sh
