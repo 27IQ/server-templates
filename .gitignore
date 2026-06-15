@@ -14,3 +14,5 @@
 !/scripts/mcron-container-hook.sh
 !/install-template-hooks.sh
 !/install-systemd-schedule.sh
+!/remove-template-hooks.sh
+!/remove-systemd-schedule.sh
