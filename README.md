@@ -47,6 +47,7 @@ RESTART_INTERVAL="24h"
 BACKUP_ENABLED="true"
 SERVER_DIR="./server"
 BACKUP_DIR="./backups"
+BACKUP_WARNING_SECONDS="60"
 ```
 
 Then create and enable the systemd service and timer:
