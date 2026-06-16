@@ -8,9 +8,6 @@ RUN apt-get update \
 
 WORKDIR /modpacks
 
-# Download the CurseForge server pack into the image.
-# You can also replace this with:
-# COPY server_pack.zip /modpacks/server_pack.zip
 RUN curl -fsSL -o /modpacks/server_pack.zip \
   https://www.curseforge.com/api/v1/mods/253026/files/5222157/download
 
