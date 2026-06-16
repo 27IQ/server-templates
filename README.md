@@ -8,7 +8,6 @@ The shared helper scripts live in `scripts/`:
 - `scripts/mcron.sh`
 - `scripts/backup.sh`
 - `scripts/scheduled-maintenance.sh`
-- `scripts/start-mcserver.sh`
 - `scripts/auto-restart-container-hook.sh`
 - `scripts/mcron-container-hook.sh`
 
@@ -20,7 +19,7 @@ When creating or refreshing a template, install the shared scripts into that tem
 
 The installer copies the host-side scripts into the template root, the container hook scripts into `resources/`, creates `.env` from `.env-template` when `.env` does not already exist, and creates the configured `SERVER_DIR` and `BACKUP_DIR`.
 
-Templates bind-mount `SERVER_DIR` to `/opt/mcserver`. The image keeps the original server pack in `/opt/mcserver-template`; on first container start, `start-mcserver.sh` copies that template into the mounted server directory if `start.sh` is missing. Backups archive `/opt/mcserver` while excluding `*.jar` files.
+Templates extend [`itzg/minecraft-server`](https://github.com/itzg/docker-minecraft-server), bind-mount `SERVER_DIR` to `/data`, and place helper hooks in `/extras`. Backups archive `/data` while excluding `*.jar` files.
 
 To remove the installed template helper files:
 

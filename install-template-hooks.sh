@@ -42,7 +42,6 @@ install -m 755 "$script_dir/auto-restart.sh" "$template_dir/auto-restart.sh"
 install -m 755 "$script_dir/mcron.sh" "$template_dir/mcron.sh"
 install -m 755 "$script_dir/backup.sh" "$template_dir/backup.sh"
 install -m 755 "$script_dir/scheduled-maintenance.sh" "$template_dir/scheduled-maintenance.sh"
-install -m 755 "$script_dir/start-mcserver.sh" "$template_dir/resources/start-mcserver.sh"
 install -m 755 "$script_dir/auto-restart-container-hook.sh" "$template_dir/resources/auto-restart-container-hook.sh"
 install -m 755 "$script_dir/mcron-container-hook.sh" "$template_dir/resources/mcron-container-hook.sh"
 

@@ -6,7 +6,7 @@ if [ -f .env ]; then
   set +a
 fi
 
-docker exec "${PACK_NAME}" bash /opt/mcserver/auto-restart-container-hook.sh
+docker exec "${PACK_NAME}" /extras/auto-restart-container-hook.sh
 docker compose restart
 
 echo "Minecraft server restarted cleanly."

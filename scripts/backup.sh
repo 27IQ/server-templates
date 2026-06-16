@@ -75,7 +75,7 @@ mcron "save-all flush"
 mcron "save-off"
 
 docker exec "$PACK_NAME" sh -c '
-  cd /opt/mcserver
+  cd /data
   tar --exclude="*.jar" -czf - .
 ' > "$backup_file"
 
