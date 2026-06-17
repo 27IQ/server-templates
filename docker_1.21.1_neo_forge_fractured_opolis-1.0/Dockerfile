@@ -44,6 +44,7 @@ RUN set_prop() { \
       mv "$file.tmp" "$file"; \
     }; \
     set_prop "motd" "${MOTD}" server.properties; \
+    set_prop "enable-rcon" "true" server.properties; \
     set_prop "rcon.port" "${RCON_PORT}" server.properties; \
     set_prop "rcon.password" "${RCON_PWD}" server.properties; \
     set_prop "white-list" "${ENABLE_WHITELIST}" server.properties; \
