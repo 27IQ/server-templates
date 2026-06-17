@@ -1,4 +1,4 @@
-FROM itzg/minecraft-server:java8
+FROM itzg/minecraft-server:java21
 
 USER root
 
