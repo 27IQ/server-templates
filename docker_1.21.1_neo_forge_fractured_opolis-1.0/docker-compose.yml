@@ -1,0 +1,17 @@
+services:
+  minecraft:
+    build: 
+      context: .
+      args:
+        RCON_PORT: ${RCON_PORT}
+        RCON_PWD: ${RCON_PWD}
+        MOTD: ${MOTD}
+        JAVA_ARGS: ${JAVA_ARGS}
+    container_name: ${PACK_NAME}
+    restart: unless-stopped
+    ports:
+      - "${SERVER_PORT}:25565"
+    expose:
+      - "${RCON_PORT}"
+    volumes:
+      - "${SERVER_DIR:-./server}:/opt/mcserver"
