@@ -61,6 +61,7 @@ remove_file "$template_dir/auto-restart.sh"
 remove_file "$template_dir/mcron.sh"
 remove_file "$template_dir/backup.sh"
 remove_file "$template_dir/scheduled-maintenance.sh"
+remove_file "$template_dir/resources/start-mcserver.sh"
 remove_file "$template_dir/resources/auto-restart-container-hook.sh"
 remove_file "$template_dir/resources/mcron-container-hook.sh"
 

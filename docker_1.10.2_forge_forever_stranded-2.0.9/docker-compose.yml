@@ -1,23 +1,17 @@
 services:
   minecraft:
-    build:
+    build: 
       context: .
+      args:
+        RCON_PORT: ${RCON_PORT}
+        RCON_PWD: ${RCON_PWD}
+        MOTD: ${MOTD}
+        JAVA_ARGS: ${JAVA_ARGS}
     container_name: ${PACK_NAME}
     restart: unless-stopped
-    environment:
-      EULA: "TRUE"
-      TYPE: "CURSEFORGE"
-      CF_SERVER_MOD: "/modpacks/server_pack.zip"
-      VERSION: "1.10.2"
-      ENABLE_RCON: "true"
-      RCON_PASSWORD: ${RCON_PWD}
-      RCON_PORT: ${RCON_PORT}
-      RCON_HOST: ${RCON_HOST:-127.0.0.1}
-      MOTD: ${MOTD}
-      JVM_OPTS: ${JAVA_ARGS}
-      UID: ${SERVER_UID:-1000}
-      GID: ${SERVER_GID:-1000}
     ports:
       - "${SERVER_PORT}:25565"
+    expose:
+      - "${RCON_PORT}"
     volumes:
-      - "${SERVER_DIR:-./server}:/data"
+      - "${SERVER_DIR:-./server}:/opt/mcserver"
