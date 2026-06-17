@@ -2,23 +2,18 @@
 
 set -euo pipefail
 
-RCON_HOST="${RCON_HOST:-127.0.0.1}"
-RCON_PORT="${RCON_PORT:-25575}"
-RCON_PWD="${RCON_PWD:?RCON_PWD environment variable not set!}"
-MCRCON_BIN="${MCRCON_BIN:-/usr/local/bin/mcrcon}"
-
-if [ ! -x "$MCRCON_BIN" ]; then
-  echo "Error: mcrcon binary not found at $MCRCON_BIN."
+if ! command -v rcon-cli >/dev/null 2>&1; then
+  echo "Error: rcon-cli not found in PATH."
   exit 1
 fi
 
 say() {
-  "$MCRCON_BIN" -H "$RCON_HOST" -P "$RCON_PORT" -p "$RCON_PWD" "say $*"
+  rcon-cli "say $*"
 }
 
-echo "Waiting for RCON at ${RCON_HOST}:${RCON_PORT}..."
+echo "Waiting for RCON to become ready..."
 for i in {1..30}; do
-  if "$MCRCON_BIN" -H "$RCON_HOST" -P "$RCON_PORT" -p "$RCON_PWD" "list" &>/dev/null; then
+  if rcon-cli "list" &>/dev/null; then
     echo "RCON is ready."
     break
   fi
@@ -38,4 +33,4 @@ for n in 5 4 3 2 1; do
 done
 say "Restarting now!"
 
-"$MCRCON_BIN" -H "$RCON_HOST" -P "$RCON_PORT" -p "$RCON_PWD" "save-all flush"
+rcon-cli "save-all flush"
