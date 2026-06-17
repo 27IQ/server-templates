@@ -59,8 +59,6 @@ set +a
 
 SERVER_DIR="${SERVER_DIR:-./server}"
 BACKUP_DIR="${BACKUP_DIR:-./backups}"
-SERVER_UID="${SERVER_UID:-1000}"
-SERVER_GID="${SERVER_GID:-1000}"
 
 create_data_dir() {
   local configured_path="$1"
@@ -73,14 +71,7 @@ create_data_dir() {
   esac
 
   mkdir -p "$data_dir"
-  if chown -R "$SERVER_UID:$SERVER_GID" "$data_dir" 2>/dev/null; then
-    echo "Set $description ownership to ${SERVER_UID}:${SERVER_GID}"
-  else
-    echo "Warning: could not set ownership on $data_dir."
-    echo "Run as root or run: sudo chown -R ${SERVER_UID}:${SERVER_GID} '$data_dir'"
-  fi
-
-  chmod 775 "$data_dir"
+  chmod 1000 "$data_dir"
   echo "Created $description directory: $data_dir"
 }
 
