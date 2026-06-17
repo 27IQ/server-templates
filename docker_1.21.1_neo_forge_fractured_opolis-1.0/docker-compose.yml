@@ -14,6 +14,8 @@ services:
       RCON_HOST: ${RCON_HOST:-127.0.0.1}
       MOTD: ${MOTD}
       JVM_OPTS: ${JAVA_ARGS}
+      UID: ${SERVER_UID:-1000}
+      GID: ${SERVER_GID:-1000}
     ports:
       - "${SERVER_PORT}:25565"
     volumes:

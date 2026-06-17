@@ -45,6 +45,8 @@ To install scheduled restarts through systemd, edit the generated `.env` first:
 RESTART_INTERVAL="24h"
 BACKUP_ENABLED="true"
 SERVER_DIR="./server"
+SERVER_UID="1000"
+SERVER_GID="1000"
 BACKUP_DIR="./backups"
 BACKUP_WARNING_SECONDS="60"
 ```
