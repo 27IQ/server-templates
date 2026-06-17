@@ -35,6 +35,8 @@ ARG JAVA_ARGS=
 ENV JAVA_ARGS=${JAVA_ARGS}
 ARG RCON_PORT=
 ENV RCON_PORT=${RCON_PORT}
+ARG ENABLE_WHITELIST=true
+ENV ENABLE_WHITELIST=${ENABLE_WHITELIST}
 
 RUN set_prop() { \
       key="$1"; value="$2"; file="$3"; \
@@ -44,6 +46,7 @@ RUN set_prop() { \
     set_prop "motd" "${MOTD}" server.properties; \
     set_prop "rcon.port" "${RCON_PORT}" server.properties; \
     set_prop "rcon.password" "${RCON_PWD}" server.properties; \
+    set_prop "white-list" "${ENABLE_WHITELIST}" server.properties; \
     set_prop "JAVA_ARGS" "\"-Xmx${MEMORY} -Xms${MEMORY} ${JAVA_ARGS}\"" variables.txt
 
 

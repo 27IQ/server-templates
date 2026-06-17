@@ -6,6 +6,7 @@ services:
         RCON_PORT: ${RCON_PORT}
         RCON_PWD: ${RCON_PWD}
         MOTD: ${MOTD}
+        ENABLE_WHITELIST: ${ENABLE_WHITELIST:-true}
         MEMORY: ${MEMORY:-6G}
         JAVA_ARGS: ${JAVA_ARGS}
     container_name: ${PACK_NAME}
