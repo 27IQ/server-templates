@@ -1,8 +1,8 @@
-
-FROM eclipse-temurin:21-jre
+FROM debian:bookworm-slim
 
 RUN apt-get update \
- && apt-get install -y --no-install-recommends curl unzip bash \
+ && apt-get install -y --no-install-recommends ca-certificates curl unzip bash tar \
+ && update-ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /opt
@@ -11,6 +11,24 @@ RUN curl -L -o server_pack.zip https://www.curseforge.com/api/v1/mods/1518508/fi
 RUN unzip server_pack.zip -d mcserver-template && rm server_pack.zip
 
 WORKDIR /opt/mcserver-template
+
+ARG GRAALVM_VERSION=21.0.8
+ARG GRAALVM_BUILD=12.1
+ARG GRAALVM_ARCH=x64
+
+ENV GRAALVM_HOME=/opt/graalvm
+ENV JAVA_HOME=/opt/graalvm
+ENV PATH="${JAVA_HOME}/bin:${PATH}"
+
+# graalvm
+RUN curl -fsSL \
+      "https://download.oracle.com/graalvm/21/latest/graalvm-jdk-21_linux-${GRAALVM_ARCH}_bin.tar.gz" \
+      -o /tmp/graalvm.tar.gz \
+    && mkdir -p /opt \
+    && tar -xzf /tmp/graalvm.tar.gz -C /opt \
+    && mv /opt/graalvm-jdk-* "${GRAALVM_HOME}" \
+    && rm /tmp/graalvm.tar.gz \
+    && java -version
 
 # mcron
 RUN apt-get update && \
