@@ -9,6 +9,7 @@ services:
         ENABLE_WHITELIST: ${ENABLE_WHITELIST:-true}
         MEMORY: ${MEMORY:-6G}
         JAVA_ARGS: ${JAVA_ARGS}
+        DIFFICULTY: ${DIFFICULTY}
     container_name: ${PACK_NAME}
     restart: unless-stopped
     ports:

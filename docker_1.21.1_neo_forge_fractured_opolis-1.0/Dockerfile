@@ -29,20 +29,23 @@ ARG RCON_PWD
 ENV RCON_PWD=${RCON_PWD} 
 ARG MOTD
 ENV MOTD=${MOTD}
-ARG MEMORY=6G
+ARG MEMORY
 ENV MEMORY=${MEMORY}
 ARG JAVA_ARGS=
 ENV JAVA_ARGS=${JAVA_ARGS}
 ARG RCON_PORT=
 ENV RCON_PORT=${RCON_PORT}
-ARG ENABLE_WHITELIST=true
+ARG ENABLE_WHITELIST
 ENV ENABLE_WHITELIST=${ENABLE_WHITELIST}
+ARG DIFFICULTY
+ENV DIFFICULTY=${DIFFICULTY}
 
 RUN set_prop() { \
       key="$1"; value="$2"; file="$3"; \
       awk -v key="$key" -v value="$value" 'BEGIN { found=0 } index($0, key "=") == 1 { print key "=" value; found=1; next } { print } END { if (!found) print key "=" value }' "$file" > "$file.tmp"; \
       mv "$file.tmp" "$file"; \
     }; \
+    set_prop "difficulty" "${DIFFICULTY}" server.properties; \
     set_prop "motd" "${MOTD}" server.properties; \
     set_prop "enable-rcon" "true" server.properties; \
     set_prop "rcon.port" "${RCON_PORT}" server.properties; \
