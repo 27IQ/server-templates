@@ -10,7 +10,9 @@ import re
 import shutil
 import sys
 import tempfile
-from urllib.error import URLError
+import zipfile
+import zlib
+from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlencode, urlparse
 from urllib.request import Request, urlopen
 
@@ -43,36 +45,29 @@ def resolve_mod(entry, game_version):
                 if file["filename"] == filename:
                     return file
     elif parsed.scheme == "https" and parsed.hostname in ("curseforge.com", "www.curseforge.com"):
-        key = os.environ.get("CF_API_KEY", "")
-        if not key:
-            raise ValueError(f"{filename}: set CF_API_KEY in .env for CurseForge downloads, or copy the jar into server/mods manually.")
-        headers = {"x-api-key": key}
         if len(parts) >= 2 and parts[0] == "projects" and parts[1].isdigit():
-            project_id = parts[1]
+            project_path = parts[1]
         elif len(parts) >= 3 and parts[:2] == ["minecraft", "mc-mods"]:
-            query = urlencode({"gameId": 432, "classId": 6, "slug": parts[2]})
-            projects = get_json(f"https://api.curseforge.com/v1/mods/search?{query}", headers)["data"]
-            matches = [project for project in projects if project["slug"] == parts[2]]
-            if len(matches) != 1:
-                raise ValueError(f"{filename}: CurseForge project could not be identified from its URL.")
-            project_id = matches[0]["id"]
+            project_path = "/".join(quote(part, safe="") for part in parts[:3])
         else:
             raise ValueError(f"{filename}: unsupported CurseForge project URL.")
-        index = 0
-        while True:
-            query = urlencode({"gameVersion": game_version, "modLoaderType": 6, "index": index, "pageSize": 50})
-            result = get_json(f"https://api.curseforge.com/v1/mods/{project_id}/files?{query}", headers)
-            for file in result["data"]:
-                if file["fileName"] == filename:
-                    if not file.get("downloadUrl"):
-                        raise ValueError(f"{filename}: author disabled API downloads; copy the jar into server/mods manually.")
-                    algorithms = {1: "sha1", 2: "md5"}
-                    hashes = {algorithms[h["algo"]]: h["value"] for h in file["hashes"] if h["algo"] in algorithms}
-                    return {"filename": filename, "url": file["downloadUrl"], "hashes": hashes}
-            count = result["pagination"]["resultCount"]
-            index += count
-            if not count or index >= result["pagination"]["totalCount"]:
-                break
+        # CFWidget provides public project/file metadata without credentials.
+        # Deliberately inspect files, never its "download" (latest-file) shortcut.
+        try:
+            project = get_json(f"https://api.cfwidget.com/{project_path}")
+        except HTTPError as error:
+            raise ValueError(f"{filename}: public CurseForge metadata lookup failed (HTTP {error.code}). Try a numeric https://www.curseforge.com/projects/<id> URL or copy the jar into server/mods manually.") from error
+        project_id = project.get("id")
+        if not isinstance(project_id, int) or project_id <= 0:
+            raise ValueError(f"{filename}: public CurseForge metadata is unavailable; retry later or copy the jar into server/mods manually.")
+        for file in project.get("files", []):
+            versions = file.get("versions", [])
+            if file.get("name") == filename and game_version in versions and "NeoForge" in versions:
+                file_id = file.get("id")
+                size = file.get("filesize")
+                if not isinstance(file_id, int) or file_id <= 0 or not isinstance(size, int) or size <= 0:
+                    raise ValueError(f"{filename}: public CurseForge file metadata is incomplete.")
+                return {"filename": filename, "url": f"https://www.curseforge.com/api/v1/mods/{project_id}/files/{file_id}/download", "size": size}
     else:
         raise ValueError(f"{filename}: missing or unsupported project URL. Export with URL enabled, use a Modrinth/CurseForge project URL, or copy the jar into server/mods manually.")
     raise ValueError(f"{filename}: exact file not found for Minecraft {game_version} / NeoForge. No newer version was substituted.")
@@ -91,15 +86,24 @@ def download_file(file, target):
         raise ValueError(f"{target.name}: download URL must use HTTPS.")
     hashes = file.get("hashes", {})
     algorithm = next((name for name in ("sha512", "sha1", "md5") if hashes.get(name)), None)
-    if algorithm is None:
-        raise ValueError(f"{target.name}: download metadata contains no supported hash.")
+    size = file.get("size")
+    if algorithm is None and (not isinstance(size, int) or size <= 0):
+        raise ValueError(f"{target.name}: download metadata contains no supported hash or file size.")
     temporary = target.with_suffix(".jar.part")
     try:
         request = Request(file["url"], headers={"User-Agent": USER_AGENT})
         with urlopen(request, timeout=120) as source, temporary.open("wb") as destination:
             shutil.copyfileobj(source, destination)
-        if file_hash(temporary, algorithm).lower() != hashes[algorithm].lower():
+        if size is not None and temporary.stat().st_size != size:
+            raise ValueError(f"Size mismatch for {target.name}; download is incomplete or not the expected jar.")
+        if algorithm and file_hash(temporary, algorithm).lower() != hashes[algorithm].lower():
             raise ValueError(f"Hash mismatch for {target.name}; refusing to start the server.")
+        try:
+            with zipfile.ZipFile(temporary) as archive:
+                if not archive.namelist() or archive.testzip() is not None:
+                    raise ValueError(f"Invalid or corrupt jar: {target.name}")
+        except (zipfile.BadZipFile, RuntimeError, NotImplementedError, zlib.error) as error:
+            raise ValueError(f"Invalid jar for {target.name}; the download may be an HTML error page.") from error
         temporary.replace(target)
     finally:
         temporary.unlink(missing_ok=True)

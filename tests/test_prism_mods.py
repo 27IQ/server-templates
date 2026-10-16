@@ -5,20 +5,25 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+import zipfile
 from unittest.mock import patch
 from urllib.parse import parse_qs, urlparse
 
 
-SCRIPT = Path(__file__).resolve().parents[1] / "docker_1.21.1_neo_forge_prism/resources/prism-mods.py"
+SCRIPT = Path(__file__).resolve().parents[1] / "docker_1.21.1_neo_forge_pic/resources/prism-mods.py"
 spec = importlib.util.spec_from_file_location("prism_mods", SCRIPT)
 prism = importlib.util.module_from_spec(spec)
 if SCRIPT.exists():
     spec.loader.exec_module(prism)
 
-JAR = b"test mod jar contents"
+jar_buffer = io.BytesIO()
+with zipfile.ZipFile(jar_buffer, "w") as archive:
+    archive.writestr("META-INF/MANIFEST.MF", "Manifest-Version: 1.0\n")
+JAR = jar_buffer.getvalue()
 SHA512 = hashlib.sha512(JAR).hexdigest()
 ENTRY = {"name": "Example", "url": "https://modrinth.com/mod/example", "version": "1.0", "filename": "example-1.0.jar"}
 FILE = {"filename": "example-1.0.jar", "url": "https://cdn.modrinth.com/example.jar", "hashes": {"sha512": SHA512}}
+CF_FILE = {"id": 456, "name": "example-1.0.jar", "filesize": len(JAR), "versions": ["1.21.1", "NeoForge"]}
 
 
 class PrismModsTests(unittest.TestCase):
@@ -102,37 +107,48 @@ class PrismModsTests(unittest.TestCase):
         self.assertFalse((self.server / "mods/example-1.0.jar").exists())
         self.assertEqual(manual.read_bytes(), b"manual")
 
-    def test_curseforge_resolves_slug_and_paginates_exact_filename(self):
+    def test_curseforge_resolves_exact_filename_without_credentials(self):
         def api(url, headers=None):
-            self.assertEqual(headers, {"x-api-key": "test-key"})
-            parsed = urlparse(url)
-            query = parse_qs(parsed.query)
-            if parsed.path == "/v1/mods/search":
-                self.assertEqual(query, {"gameId": ["432"], "classId": ["6"], "slug": ["example"]})
-                return {"data": [{"id": 123, "slug": "example"}]}
-            self.assertEqual(parsed.path, "/v1/mods/123/files")
-            self.assertEqual(query["gameVersion"], ["1.21.1"])
-            self.assertEqual(query["modLoaderType"], ["6"])
-            index = int(query["index"][0])
-            files = [{"fileName": "wrong.jar"}] if index == 0 else [{"fileName": "example-1.0.jar", "downloadUrl": "https://edge.forgecdn.net/example.jar", "hashes": [{"algo": 1, "value": hashlib.sha1(JAR).hexdigest()}]}]
-            return {"data": files, "pagination": {"index": index, "resultCount": 1, "totalCount": 2}}
-        with patch.dict(prism.os.environ, {"CF_API_KEY": "test-key"}), patch.object(prism, "get_json", side_effect=api):
+            self.assertIsNone(headers)
+            self.assertEqual(url, "https://api.cfwidget.com/minecraft/mc-mods/example")
+            return {"id": 123, "files": [{**CF_FILE, "id": 999, "name": "example-9.0.jar"}, CF_FILE], "download": {**CF_FILE, "name": "example-9.0.jar"}}
+        with patch.dict(prism.os.environ, {}, clear=True), patch.object(prism, "get_json", side_effect=api):
             result = prism.resolve_mod({**ENTRY, "url": "https://www.curseforge.com/minecraft/mc-mods/example"}, "1.21.1")
-        self.assertEqual(result["url"], "https://edge.forgecdn.net/example.jar")
-        self.assertEqual(result["hashes"], {"sha1": hashlib.sha1(JAR).hexdigest()})
+        self.assertEqual(result["url"], "https://www.curseforge.com/api/v1/mods/123/files/456/download")
+        self.assertEqual(result["size"], len(JAR))
 
-    def test_curseforge_project_id_and_missing_key(self):
-        with patch.dict(prism.os.environ, {"CF_API_KEY": ""}):
-            with self.assertRaisesRegex(ValueError, "CF_API_KEY"):
-                prism.resolve_mod({**ENTRY, "url": "https://www.curseforge.com/projects/123"}, "1.21.1")
-
-    def test_curseforge_numeric_project_with_blocked_download_is_actionable(self):
+    def test_curseforge_numeric_project_without_credentials(self):
         def api(url, headers=None):
-            self.assertEqual(urlparse(url).path, "/v1/mods/123/files")
-            return {"data": [{"fileName": "example-1.0.jar", "downloadUrl": None}], "pagination": {"resultCount": 1, "totalCount": 1}}
-        with patch.dict(prism.os.environ, {"CF_API_KEY": "test-key"}), patch.object(prism, "get_json", side_effect=api):
-            with self.assertRaisesRegex(ValueError, "manually"):
-                prism.resolve_mod({**ENTRY, "url": "https://www.curseforge.com/projects/123"}, "1.21.1")
+            self.assertEqual(url, "https://api.cfwidget.com/123")
+            self.assertIsNone(headers)
+            return {"id": 123, "files": [CF_FILE]}
+        with patch.dict(prism.os.environ, {}, clear=True), patch.object(prism, "get_json", side_effect=api):
+            result = prism.resolve_mod({**ENTRY, "url": "https://www.curseforge.com/projects/123"}, "1.21.1")
+        self.assertEqual(result["url"], "https://www.curseforge.com/api/v1/mods/123/files/456/download")
+
+    def test_curseforge_never_uses_latest_or_incompatible_file(self):
+        for file in ({**CF_FILE, "name": "example-9.0.jar"}, {**CF_FILE, "versions": ["1.20.1", "NeoForge"]}, {**CF_FILE, "versions": ["1.21.1", "Fabric"]}):
+            with self.subTest(file=file), patch.object(prism, "get_json", return_value={"id": 123, "files": [file], "download": file}):
+                with self.assertRaisesRegex(ValueError, "example-1.0.jar"):
+                    prism.resolve_mod({**ENTRY, "url": "https://www.curseforge.com/projects/123"}, "1.21.1")
+
+    def test_curseforge_download_checks_size_and_jar_instead_of_requiring_hash(self):
+        target = self.root / "example.jar"
+        file = {"url": "https://www.curseforge.com/api/v1/mods/123/files/456/download", "size": len(JAR)}
+        with patch.object(prism, "urlopen", return_value=io.BytesIO(JAR)):
+            prism.download_file(file, target)
+        self.assertEqual(target.read_bytes(), JAR)
+
+    def test_curseforge_download_rejects_html_and_wrong_size(self):
+        corrupt_jar = JAR.replace(b"Manifest-Version", b"Xanifest-Version")
+        for data, size in ((b"<html>blocked download</html>", 29), (JAR, len(JAR) + 1), (corrupt_jar, len(JAR))):
+            with self.subTest(data=data):
+                target = self.root / "bad.jar"
+                with patch.object(prism, "urlopen", return_value=io.BytesIO(data)):
+                    with self.assertRaises(ValueError):
+                        prism.download_file({"url": "https://www.curseforge.com/api/v1/mods/123/files/456/download", "size": size}, target)
+                self.assertFalse(target.exists())
+                self.assertFalse(target.with_suffix(".jar.part").exists())
 
     def test_changed_cached_jar_is_downloaded_again(self):
         with patch.object(prism, "get_json", side_effect=self.api), patch.object(prism, "urlopen", return_value=io.BytesIO(JAR)):

@@ -1,7 +1,7 @@
 **/.env
 **/__pycache__/
 *.pyc
-/docker_1.21.1_neo_forge_prism/mods.json
+/docker_1.21.1_neo_forge_pic/mods.json
 **/auto-restart.sh
 **/mcron.sh
 **/backup.sh

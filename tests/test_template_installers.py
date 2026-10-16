@@ -25,7 +25,7 @@ class TemplateInstallerTests(unittest.TestCase):
         self.work = Path(self.temp.name)
         self.profile = self.work / "profile"
         self.profile.mkdir()
-        shutil.copyfile(ROOT / "docker_1.21.1_neo_forge_prism/.env-template", self.profile / ".env-template")
+        shutil.copyfile(ROOT / "docker_1.21.1_neo_forge_pic/.env-template", self.profile / ".env-template")
         self.bin = self.work / "bin"
         self.bin.mkdir()
         self.units = self.work / "units"

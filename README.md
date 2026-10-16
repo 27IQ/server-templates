@@ -2,7 +2,7 @@
 
 `docker_1.10.2_forge_forever_stranded-2.0.9` is the reference template for creating more Minecraft docker templates.
 
-For a custom pack exported through Prism Launcher instead of a published server pack, use [`docker_1.21.1_neo_forge_prism`](docker_1.21.1_neo_forge_prism/README.md): Minecraft **1.21.1**, NeoForge **21.1.259**, and Java **21**. Save **Mods → Export List → JSON** (with URL and File Name enabled) as that profile's `mods.json`, review client-only exclusions, install the shared hooks, and run Docker Compose. See the profile README for setup and CurseForge API-key requirements.
+For a custom pack exported through Prism Launcher instead of a published server pack, use [`docker_1.21.1_neo_forge_pic`](docker_1.21.1_neo_forge_pic/README.md): Minecraft **1.21.1**, NeoForge **21.1.259**, and Java **21**. Save **Mods → Export List → JSON** (with URL and File Name enabled) as that profile's `mods.json`, review client-only exclusions, install the shared hooks, and run Docker Compose. Modrinth and CurseForge downloads require no API key; see the profile README for setup.
 
 The shared helper scripts live in `scripts/`:
 
