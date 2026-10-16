@@ -1,0 +1,33 @@
+services:
+  minecraft:
+    build:
+      context: .
+    container_name: ${PACK_NAME}
+    restart: unless-stopped
+    environment:
+      RCON_PORT: ${RCON_PORT:-25575}
+      RCON_PWD: ${RCON_PWD:?Set RCON_PWD in .env}
+      MOTD: ${MOTD:-Prism NeoForge Server}
+      ENABLE_WHITELIST: ${ENABLE_WHITELIST:-true}
+      MEMORY: ${MEMORY:-8G}
+      JAVA_ARGS: ${JAVA_ARGS:-}
+      DIFFICULTY: ${DIFFICULTY:-hard}
+      CF_API_KEY: ${CF_API_KEY:-}
+    ports:
+      - "${SERVER_PORT:-25565}:25565"
+    expose:
+      - "${RCON_PORT:-25575}"
+    volumes:
+      - "${SERVER_DIR:-./server}:/opt/mcserver"
+      - type: bind
+        source: ./mods.json
+        target: /opt/prism/mods.json
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./excluded-mods.txt
+        target: /opt/prism/excluded-mods.txt
+        read_only: true
+        bind:
+          create_host_path: false

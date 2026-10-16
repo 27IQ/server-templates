@@ -1,0 +1,3 @@
+# Client-only mods to omit from the server: one exact exported name or filename per line.
+# Example:
+# client-only-mod-1.0.jar

@@ -2,6 +2,8 @@
 
 `docker_1.10.2_forge_forever_stranded-2.0.9` is the reference template for creating more Minecraft docker templates.
 
+For a custom pack exported through Prism Launcher instead of a published server pack, use [`docker_1.21.1_neo_forge_prism`](docker_1.21.1_neo_forge_prism/README.md): Minecraft **1.21.1**, NeoForge **21.1.259**, and Java **21**. Save **Mods → Export List → JSON** (with URL and File Name enabled) as that profile's `mods.json`, review client-only exclusions, install the shared hooks, and run Docker Compose. See the profile README for setup and CurseForge API-key requirements.
+
 The shared helper scripts live in `scripts/`:
 
 - `scripts/auto-restart.sh`
@@ -56,7 +58,7 @@ Then create and enable the systemd service and timer:
 ./install-systemd-schedule.sh ./docker_1.10.2_forge_forever_stranded-2.0.9
 ```
 
-The timer uses systemd `Persistent=true`, so a missed restart runs after the machine comes back online.
+The timer first runs five minutes after boot (or immediately when enabled later than that), then repeats at `RESTART_INTERVAL`. It uses a monotonic interval: `Persistent=true` does not provide missed-run catch-up for `OnUnitActiveSec` timers; that setting only applies to `OnCalendar` timers. See the [systemd timer documentation](https://www.freedesktop.org/software/systemd/man/latest/systemd.timer.html#Persistent=).
 
 To remove the systemd service and timer:
 

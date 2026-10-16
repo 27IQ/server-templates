@@ -1,0 +1,6 @@
+.env
+mods.json
+server/
+backups/
+__pycache__/
+*.pyc

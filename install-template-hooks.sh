@@ -71,7 +71,7 @@ create_data_dir() {
   esac
 
   mkdir -p "$data_dir"
-  chmod 1000 "$data_dir"
+  chmod 0750 "$data_dir"
   echo "Created $description directory: $data_dir"
 }
 
