@@ -1,3 +1,20 @@
 # Client-only mods to omit from the server: one exact exported name or filename per line.
-# Example:
-# client-only-mod-1.0.jar
+# From the supplied Prism export: Modrinth marks these as unsupported on servers.
+3d-Skin-Layers
+Create: Smart Bounds
+Cubes Without Borders
+Emissivity
+EntityCulling
+Fast IP Ping
+Immersive Overlays
+Iris
+Item Descriptions
+Model Gap Fix
+More Culling
+Reese's Sodium Options
+Sodium
+Sodium Extra
+
+# Continuity's author also identifies it as client-only:
+# https://www.curseforge.com/minecraft/mc-mods/continuity
+Continuity

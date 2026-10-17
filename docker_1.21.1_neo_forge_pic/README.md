@@ -11,6 +11,8 @@ This profile installs NeoForge directly, then downloads your individual mods fro
 4. Save the result as `mods.json` in this profile directory. `mods.example.json` shows the shape; replace its example with your actual export.
 5. Put client-only mods in `excluded-mods.txt`, one exact exported name or jar filename per line. The JSON list has no reliable client/server classification, so review it before starting a dedicated server.
 
+The included exclusion list covers 15 confirmed client-only mods from the supplied instance export, using their names so version updates still match. Review the list when changing packs.
+
 If Prism includes its `.index` metadata directory in the exported list, the importer skips that entry automatically. Other entries still require valid jar filenames; an export containing only metadata is rejected.
 
 The downloader supports Modrinth project links and CurseForge project links (including numeric `/projects/<id>` URLs). It looks for the **exact exported filename** among releases for Minecraft 1.21.1 and NeoForge. Modrinth downloads use the platform's checksum. CurseForge downloads use public [CFWidget metadata](https://cfwidget.com/) to identify the file, then download directly from CurseForge without an API key. CFWidget supplies file sizes rather than checksums, so these downloads are checked for the expected size and JAR/ZIP integrity. It fails with an explanation if the file cannot be resolved; it never substitutes a newer release. All required dependencies must also be included in your export.

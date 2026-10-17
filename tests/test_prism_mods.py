@@ -3,8 +3,10 @@ import importlib.util
 import io
 import json
 from pathlib import Path
+import struct
 import tempfile
 import unittest
+import warnings
 import zipfile
 from unittest.mock import patch
 from urllib.parse import parse_qs, urlparse
@@ -24,6 +26,39 @@ SHA512 = hashlib.sha512(JAR).hexdigest()
 ENTRY = {"name": "Example", "url": "https://modrinth.com/mod/example", "version": "1.0", "filename": "example-1.0.jar"}
 FILE = {"filename": "example-1.0.jar", "url": "https://cdn.modrinth.com/example.jar", "hashes": {"sha512": SHA512}}
 CF_FILE = {"id": 456, "name": "example-1.0.jar", "filesize": len(JAR), "versions": ["1.21.1", "NeoForge"]}
+
+
+def jar_with_alias_records():
+    """Repeat central-directory records pointing to the same physical JAR entries."""
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as archive:
+        archive.writestr("META-INF/LICENSE.txt", "Example license")
+        archive.writestr("META-INF/MANIFEST.MF", "Manifest-Version: 1.0\n")
+    data = buffer.getvalue()
+    end_offset = data.rfind(b"PK\x05\x06")
+    directory_offset = struct.unpack_from("<I", data, end_offset + 16)[0]
+    directory = data[directory_offset:end_offset]
+    end_record = bytearray(data[end_offset:])
+    struct.pack_into("<HHI", end_record, 8, 4, 4, len(directory) * 2)
+    return data[:end_offset] + directory + end_record
+
+
+class Python311ZipFile(zipfile.ZipFile):
+    """Retain Python 3.11's rejection of alias records on newer test runtimes."""
+
+    def _RealGetContents(self):
+        super()._RealGetContents()
+        end_offset = self.start_dir
+        for info in sorted(self.infolist(), key=lambda entry: entry.header_offset, reverse=True):
+            info._end_offset = end_offset
+            end_offset = info.header_offset
+
+    def open(self, name, mode="r", pwd=None, *, force_zip64=False):
+        if mode == "r":
+            info = name if isinstance(name, zipfile.ZipInfo) else self.getinfo(name)
+            if info._end_offset == info.header_offset:
+                raise zipfile.BadZipFile(f"Overlapped entries: {info.filename!r}")
+        return super().open(name, mode, pwd, force_zip64=force_zip64)
 
 
 class PrismModsTests(unittest.TestCase):
@@ -170,6 +205,38 @@ class PrismModsTests(unittest.TestCase):
                         prism.download_file({"url": "https://www.curseforge.com/api/v1/mods/123/files/456/download", "size": size}, target)
                 self.assertFalse(target.exists())
                 self.assertFalse(target.with_suffix(".jar.part").exists())
+
+    def test_jar_with_identical_alias_records_is_accepted_on_python311(self):
+        data = jar_with_alias_records()
+        target = self.root / "shaded.jar"
+        with patch.object(prism.zipfile, "ZipFile", Python311ZipFile), patch.object(prism, "urlopen", return_value=io.BytesIO(data)):
+            prism.download_file({"url": FILE["url"], "size": len(data)}, target)
+        self.assertEqual(target.read_bytes(), data)
+
+    def test_jar_with_conflicting_alias_records_is_rejected(self):
+        data = bytearray(jar_with_alias_records())
+        directory = data.find(b"PK\x01\x02")
+        alias = data.find(b"PK\x01\x02", data.find(b"PK\x01\x02", directory + 1) + 1)
+        data[alias + 16] ^= 1  # The same physical entry is now assigned conflicting CRCs.
+        target = self.root / "conflicting.jar"
+        with patch.object(prism, "urlopen", return_value=io.BytesIO(data)):
+            with self.assertRaises(ValueError):
+                prism.download_file({"url": FILE["url"], "size": len(data)}, target)
+        self.assertFalse(target.exists())
+
+    def test_corruption_in_earlier_duplicate_filename_is_rejected(self):
+        buffer = io.BytesIO()
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", UserWarning)
+            with zipfile.ZipFile(buffer, "w") as archive:
+                archive.writestr("META-INF/LICENSE.txt", "FIRST-LICENSE")
+                archive.writestr("META-INF/LICENSE.txt", "SECOND-LICENSE")
+        data = buffer.getvalue().replace(b"FIRST-LICENSE", b"BROKE-LICENSE")
+        target = self.root / "corrupt-duplicate.jar"
+        with patch.object(prism, "urlopen", return_value=io.BytesIO(data)):
+            with self.assertRaises(ValueError):
+                prism.download_file({"url": FILE["url"], "size": len(data)}, target)
+        self.assertFalse(target.exists())
 
     def test_changed_cached_jar_is_downloaded_again(self):
         with patch.object(prism, "get_json", side_effect=self.api), patch.object(prism, "urlopen", return_value=io.BytesIO(JAR)):

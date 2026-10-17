@@ -100,10 +100,28 @@ def download_file(file, target):
             raise ValueError(f"Hash mismatch for {target.name}; refusing to start the server.")
         try:
             with zipfile.ZipFile(temporary) as archive:
-                if not archive.namelist() or archive.testzip() is not None:
-                    raise ValueError(f"Invalid or corrupt jar: {target.name}")
+                if not archive.infolist():
+                    raise zipfile.BadZipFile("Archive contains no entries")
+                checked = {}
+                members = []
+                for info in archive.infolist():
+                    signature = (info.orig_filename, info.CRC, info.compress_size,
+                                 info.file_size, info.compress_type, info.flag_bits)
+                    if info.header_offset in checked:
+                        if checked[info.header_offset] != signature:
+                            raise zipfile.BadZipFile(f"Conflicting records for {info.filename!r}")
+                        continue
+                    checked[info.header_offset] = signature
+                    members.append(info)
+                # Some shaded JARs repeat identical central-directory records.
+                # Read each physical entry once by ZipInfo: Python 3.11's
+                # testzip() looks up the last record by name and rejects aliases.
+                for info in members:
+                    with archive.open(info) as source:
+                        while source.read(1024 * 1024):
+                            pass  # Reading to EOF verifies the entry's CRC.
         except (zipfile.BadZipFile, RuntimeError, NotImplementedError, zlib.error) as error:
-            raise ValueError(f"Invalid jar for {target.name}; the download may be an HTML error page.") from error
+            raise ValueError(f"Invalid or corrupt jar: {target.name} ({error})") from error
         temporary.replace(target)
     finally:
         temporary.unlink(missing_ok=True)
