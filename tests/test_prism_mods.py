@@ -57,6 +57,27 @@ class PrismModsTests(unittest.TestCase):
         with patch.object(prism, "get_json", side_effect=AssertionError("Restart should use verified local files")):
             self.install()
 
+    def test_prism_index_metadata_is_skipped_while_mods_are_installed(self):
+        self.manifest.write_text(json.dumps([{"name": ".index", "filename": ".index"}, ENTRY]), encoding="utf-8")
+        with patch.object(prism, "get_json", side_effect=self.api), patch.object(prism, "urlopen", return_value=io.BytesIO(JAR)):
+            self.install()
+        self.assertEqual(self.server.joinpath("mods/example-1.0.jar").read_bytes(), JAR)
+        state = json.loads(self.server.joinpath(".prism-mods-state.json").read_text())
+        self.assertEqual(state["files"], {"example-1.0.jar": SHA512})
+
+    def test_index_only_export_does_not_import_an_empty_pack(self):
+        self.manifest.write_text(json.dumps([{"name": ".index", "filename": ".index"}]), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "No mod jars"):
+            self.install()
+        self.assertFalse(self.server.joinpath(".prism-mods-state.json").exists())
+
+    def test_index_skip_does_not_bypass_jar_filename_validation(self):
+        for filename in ("../escape.jar", ".hidden.jar", ".index/escape.jar"):
+            with self.subTest(filename=filename):
+                self.manifest.write_text(json.dumps([{"filename": ".index"}, {**ENTRY, "filename": filename}]), encoding="utf-8")
+                with self.assertRaisesRegex(ValueError, repr(filename).replace(".", r"\.")):
+                    self.install()
+
     def test_rejects_hash_mismatch_without_committing_install_state(self):
         with patch.object(prism, "get_json", side_effect=self.api), patch.object(prism, "urlopen", return_value=io.BytesIO(b"corrupt")):
             with self.assertRaisesRegex(ValueError, "[Hh]ash"):

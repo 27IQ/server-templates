@@ -119,7 +119,11 @@ def install_mods(manifest_path, server_dir, excluded_path, game_version):
     for entry in entries:
         if not isinstance(entry, dict):
             raise ValueError("Each Export List entry must be a JSON object.")
-        filename = safe_filename(entry.get("filename"))
+        filename = entry.get("filename")
+        if filename == ".index":
+            print("Skipping Prism metadata directory .index", flush=True)
+            continue
+        filename = safe_filename(filename)
         if filename in seen:
             raise ValueError(f"Duplicate filename in export: {filename}")
         seen.add(filename)
@@ -127,6 +131,9 @@ def install_mods(manifest_path, server_dir, excluded_path, game_version):
             print(f"Excluded {filename}", flush=True)
         else:
             selected.append(entry)
+
+    if not seen:
+        raise ValueError("No mod jars found in Prism Export List JSON; select the enabled mods when exporting.")
 
     mods_dir = server_dir / "mods"
     mods_dir.mkdir(parents=True, exist_ok=True)
